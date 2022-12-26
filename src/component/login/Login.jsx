@@ -1,8 +1,24 @@
 import "./login.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Login = (props) => {
   const [isConnecting, setIsConnecting] = useState(false);
+  const [provider, setProvider] = useState(window.ethereum)
+  const [isMetamaskInstalled, setIsMetamaskInstalled] = useState(false)
+
+  useEffect(() => {
+    setProvider(detectProvider())
+  }, [])
+  useEffect(() => {
+    const provider = detectProvider();
+    if (provider) {
+      if (!window.ethereum) {
+        console.error("you have installed multiple wallet");
+      }
+      setIsMetamaskInstalled(true)
+    }
+  }, [provider])
+
   const detectProvider = () => {
     let provider;
     if (window.ethereum) {
@@ -10,34 +26,34 @@ const Login = (props) => {
     } else if (window.web3) {
       provider = window.web3.currentProvider;
     } else {
-      window.alert("no ethereum browser detected checkout metamask");
+      console.warn("no ethereum browser detected checkout metamask");
     }
     return provider;
   };
 
   async function onLoginHandler() {
-    const provider = detectProvider();
-    if (provider) {
-      if (!window.ethereum) {
-        console.error("you have installed multiple wallet");
-      }
-      setIsConnecting(true);
-      await provider.request({
-        method: "eth_requestAccounts",
-      });
-      setIsConnecting(false);
-      props.login(provider);
-    }
+    setIsConnecting(true);
+    await provider.request({
+      method: "eth_requestAccounts",
+    });
+    setIsConnecting(false);
+    props.login(provider);
   }
+
   return (
     <div className="card">
-      <button
-        onClick={onLoginHandler}
-        style={{ backgroundColor: "violet", color: "white", padding: "10px" }}
-      >
-       {! isConnecting && "Connect"}
-       {isConnecting && "Loading..."}
-      </button>
+      {isMetamaskInstalled &&
+        <button
+          onClick={onLoginHandler}
+          style={{ backgroundColor: "violet", color: "white", padding: "10px" }}
+        >
+          {!isConnecting && "Connect"}
+          {isConnecting && "Loading..."}
+        </button>}
+
+      {!isMetamaskInstalled &&
+        <p><a href="https://metamask.io/">Install Metamask</a></p>}
+
     </div>
   );
 };
